@@ -1,0 +1,20 @@
+name: KaldenvoldPlugin
+main: com.jamesmonger.kaldenvold.KaldenvoldPlugin
+version: 0.9
+
+commands:
+   ooc:
+      description: Global OOC chat toggle.
+      usage: /<(o)oc>
+   o:
+      description: Global OOC chat toggle.
+      usage: /<(o)oc>
+   autotranslate:
+      description: Super ears!
+      usage: /autotranslate
+   ability:
+      description: Toggle your race ability.
+      usage: /ability
+   understanding:
+      description: Language understanding
+      usage: /understanding race amount
