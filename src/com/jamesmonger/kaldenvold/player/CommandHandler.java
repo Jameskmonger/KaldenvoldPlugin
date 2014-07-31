@@ -8,6 +8,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffectType;
 
+import ru.tehkode.permissions.PermissionUser;
+import ru.tehkode.permissions.bukkit.PermissionsEx;
+
 import com.jamesmonger.kaldenvold.KaldenvoldPlugin;
 import com.jamesmonger.kaldenvold.race.Race;
 
@@ -23,22 +26,21 @@ public class CommandHandler
 	public boolean handleCommand(final CommandSender sender, Command cmd, String label,
 			String[] args)
 	{
-		if (cmd.getName().equalsIgnoreCase("understanding"))
+		if (cmd.getName().equalsIgnoreCase("acceptplayer"))
 		{
-			if (args.length != 2)
-				return false;
+			if(args.length != 1)
+			{
+				sender.sendMessage("Usage: /acceptplayer [name]");
+			}
 			
-			String race = args[0];
-			int amount = Integer.parseInt(args[1]);
+			Player _target = plugin.getServer().getPlayer(args[0]);
 			
-			KaldenvoldPlayer k_sender = KaldenvoldPlugin.playerList.get(sender);
+			PermissionUser target = PermissionsEx.getUser(_target);
 			
-			Race raceObject = plugin.getRaceByLiteralName(race);
+			target.addGroup("accepted");
 			
-			k_sender.setUnderstanding(raceObject.getType(), amount);
-			
-			sender.sendMessage("Your understanding of " + raceObject.getDisplayName() + " is now " + k_sender.getUnderstanding(raceObject.getType()));
-			return true;
+			_target.sendMessage(ChatColor.GRAY + "You have been accepted to " + ChatColor.WHITE + "Kaldenvold" + ChatColor.GRAY + " by " + ChatColor.WHITE + sender.getName() + ChatColor.GRAY + "!");
+			_target.sendMessage(ChatColor.GRAY + "You have been accepted " + ChatColor.WHITE + _target.getName() + ChatColor.GRAY + " to " + ChatColor.WHITE + "Kaldenvold" + ChatColor.GRAY + "!");
 		}
 		if (cmd.getName().equalsIgnoreCase("ooc")
 				|| cmd.getName().equalsIgnoreCase("o"))

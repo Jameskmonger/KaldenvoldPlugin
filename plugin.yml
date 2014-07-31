@@ -15,6 +15,6 @@ commands:
    ability:
       description: Toggle your race ability.
       usage: /ability
-   understanding:
-      description: Language understanding
-      usage: /understanding race amount
+   acceptplayer:
+      description: Accept a player to Kaldenvold
+      usage: /acceptplayer [player]
