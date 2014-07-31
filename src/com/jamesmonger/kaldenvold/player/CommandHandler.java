@@ -31,6 +31,7 @@ public class CommandHandler
 			if(args.length != 1)
 			{
 				sender.sendMessage("Usage: /acceptplayer [name]");
+				return true;
 			}
 			
 			Player _target = plugin.getServer().getPlayer(args[0]);
@@ -40,7 +41,8 @@ public class CommandHandler
 			target.addGroup("accepted");
 			
 			_target.sendMessage(ChatColor.GRAY + "You have been accepted to " + ChatColor.WHITE + "Kaldenvold" + ChatColor.GRAY + " by " + ChatColor.WHITE + sender.getName() + ChatColor.GRAY + "!");
-			_target.sendMessage(ChatColor.GRAY + "You have been accepted " + ChatColor.WHITE + _target.getName() + ChatColor.GRAY + " to " + ChatColor.WHITE + "Kaldenvold" + ChatColor.GRAY + "!");
+			sender.sendMessage(ChatColor.GRAY + "You have been accepted " + ChatColor.WHITE + _target.getName() + ChatColor.GRAY + " to " + ChatColor.WHITE + "Kaldenvold" + ChatColor.GRAY + "!");
+			return true;
 		}
 		if (cmd.getName().equalsIgnoreCase("ooc")
 				|| cmd.getName().equalsIgnoreCase("o"))
