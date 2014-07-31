@@ -88,7 +88,7 @@ public class Events implements Listener
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void playerRespawn(PlayerRespawnEvent event)
 	{
 		Player p = event.getPlayer();
