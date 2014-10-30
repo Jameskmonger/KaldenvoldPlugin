@@ -1,8 +1,8 @@
 package com.jamesmonger.kaldenvold;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
@@ -10,17 +10,20 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import ru.tehkode.permissions.PermissionUser;
 import ru.tehkode.permissions.bukkit.PermissionsEx;
 
+import com.earth2me.essentials.Essentials;
 import com.jamesmonger.kaldenvold.language.Scrambler;
-import com.jamesmonger.kaldenvold.player.AccountManager;
+import com.jamesmonger.kaldenvold.player.ChatType;
 import com.jamesmonger.kaldenvold.player.CommandHandler;
 import com.jamesmonger.kaldenvold.player.Events;
 import com.jamesmonger.kaldenvold.player.KaldenvoldPlayer;
 import com.jamesmonger.kaldenvold.player.Utils;
+import com.jamesmonger.kaldenvold.player.account.AccountManager;
 import com.jamesmonger.kaldenvold.race.*;
 
 public class KaldenvoldPlugin extends JavaPlugin
@@ -28,8 +31,10 @@ public class KaldenvoldPlugin extends JavaPlugin
 	public static HashMap<String, Race> raceList = new HashMap<String, Race>();
 	public static HashMap<Player, KaldenvoldPlayer> playerList = new HashMap<Player, KaldenvoldPlayer>();
 	public static AccountManager accountManager;
+	public static boolean globalOOC = false;
 	public CommandHandler commandHandler;
 	public Events eventInstance = new Events(this);
+	public Essentials essentials;
 	
 	String ADMIN_TAG = (ChatColor.GREEN + "[A]");
 	String MODERATOR_TAG = (ChatColor.DARK_AQUA + "[M]");
@@ -37,23 +42,31 @@ public class KaldenvoldPlugin extends JavaPlugin
 	
 	public void onEnable()
 	{
+		Plugin essentialsPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
+		this.essentials = (Essentials) essentialsPlugin;
+		
 		getServer().getPluginManager().registerEvents(eventInstance, this);
 		accountManager = new AccountManager(this);
 		commandHandler = new CommandHandler(this);
-		new Race(this, "none", "none", RaceTypes.NONE, 896.639, 24.0, 316.493, 90.2f);
-		new Race(this, "norin", "Norin", RaceTypes.HUMAN, -302.500, 64.0, -362.500, 44.635f);
-		new Race(this, "hilrin", "Hilrin", RaceTypes.HUMAN, -873.500, 81.0, 448.500, 62.335f);
-		new Race(this, "sharin", "Sharin", RaceTypes.HUMAN, 631.500, 63.0, -839.500, 45.835f);
-		new Race(this, "aayriil", "Aayriil", RaceTypes.ELF, -912.500, 63.0, 1244.500, 59.635f);
-		new Race(this, "fohriil", "Fohriil", RaceTypes.ELF, -912.500, 63.0, 1244.500, 166.885f);
-		new Race(this, "orc", "Orc", RaceTypes.ORC, -672.500, 63.0, 858.500, -88.865f);
-		new Race(this, "dwarf", "Dwarf", RaceTypes.DWARF, -1135.259, 65.000, -1125.986, 77.935f);
-		new Race(this, "rheylin", "Rheylin", RaceTypes.RHEYLIN, 876.017, 27.0, 981.817, 91.740f);
-		new Race(this, "sentinel", "Sentinel", RaceTypes.SENTINEL, 826.961, 65.0, 535.409, -90.965f);
+		new Race(this, "none", "none", RaceType.NONE, 896.639, 24.0, 316.493, 90.2f);
+		new Race(this, "norin", "Norin", RaceType.HUMAN, -302.500, 64.0, -362.500, 44.635f);
+		new Race(this, "hilrin", "Hilrin", RaceType.HUMAN, -873.500, 81.0, 448.500, 62.335f);
+		new Race(this, "sharin", "Sharin", RaceType.HUMAN, 631.500, 63.0, -839.500, 45.835f);
+		new Race(this, "aayriil", "Aayriil", RaceType.ELF, -912.500, 63.0, 1244.500, 59.635f);
+		new Race(this, "fohriil", "Fohriil", RaceType.ELF, -912.500, 63.0, 1244.500, 166.885f);
+		new Race(this, "orc", "Orc", RaceType.ORC, -672.500, 63.0, 858.500, -88.865f);
+		new Race(this, "dwarf", "Dwarf", RaceType.DWARF, -1135.259, 65.000, -1125.986, 77.935f);
+		new Race(this, "rheylin", "Rheylin", RaceType.RHEYLIN, 876.017, 27.0, 981.817, 91.740f);
+		new Race(this, "sentinel", "Sentinel", RaceType.SENTINEL, 826.961, 65.0, 535.409, -90.965f);
 
 		for (Player player : this.getServer().getOnlinePlayers())
 		{
-			KaldenvoldPlugin.accountManager.LoadAccount(player);
+			try {
+				KaldenvoldPlugin.accountManager.loadAccount(player);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 			Utils.giveRaceAbility(this, player);
 		}
@@ -63,7 +76,12 @@ public class KaldenvoldPlugin extends JavaPlugin
 	{
 		for (Player player : this.getServer().getOnlinePlayers())
 		{
-			KaldenvoldPlugin.accountManager.SaveAccount(player);
+			try {
+				KaldenvoldPlugin.accountManager.saveAccount(player);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -90,26 +108,67 @@ public class KaldenvoldPlugin extends JavaPlugin
 		
 		return null;
 	}
+	
+	public void handleAction(Player chatter, String action)
+	{
+		boolean global = false;
+		KaldenvoldPlayer sender = KaldenvoldPlugin.playerList.get(chatter);
+		if (sender.getChatType() == ChatType.GLOBAL_OOC 
+				&& (chatter.hasPermission("kaldenvold.chat.globalme") || chatter.isOp()))
+		{
+			global = true;
+		}
+		
+		if (global)
+		{
+			getServer().broadcastMessage(ChatColor.GRAY + "[G] " + ChatColor.DARK_PURPLE + " * " + ChatColor.stripColor(chatter.getDisplayName()) + " " + action);
+		}
+		else
+		{
+			Location chatterLocation = chatter.getLocation();
+			
+			int playersHeard = 0;
+			for (Player player : this.getServer().getOnlinePlayers())
+			{
+				if (player.getLocation().distance(chatterLocation) <= 30.0)
+				{
+					if (player != chatter)
+					{
+						playersHeard++;
+					}
+					
+					player.sendMessage(ChatColor.DARK_PURPLE + " * " + ChatColor.stripColor(chatter.getDisplayName()) + " " + action);
+				}
+			}
+			
+			if (playersHeard == 0)
+			{
+				chatter.sendMessage(ChatColor.YELLOW + "Nobody can hear you!");
+			}
+		}
+	}
 
-	public void SendChatToAll(Player chatter, String msg)
+	public void handleChat(Player chatter, String msg)
 	{
 		String finalisedMessage = null;
-		String chatterName = ChatColor.stripColor(chatter.getDisplayName());
+		String icName = ChatColor.stripColor(chatter.getDisplayName());
+		String oocName = ChatColor.stripColor(chatter.getName());
 		KaldenvoldPlayer sender = KaldenvoldPlugin.playerList.get(chatter);
 		
 		if (sender.getRace().getName().equalsIgnoreCase("none"))
 		{
-			if(sender.ooc == false)
+			if (sender.getChatType() != ChatType.GLOBAL_OOC)
 			{
 				chatter.sendMessage(ChatColor.GRAY + "You must choose a race to speak in character.");
-				sender.ooc = true;
+				sender.setChatType(ChatType.GLOBAL_OOC);
 			}
 		}
 		
-		if (sender.ooc == false)
+		ChatType chatType = sender.getChatType();
+		Location chatterLocation = chatter.getLocation();
+		
+		if (chatType == ChatType.LOCAL_IC)
 		{
-			Location chatterLocation = chatter.getLocation();
-	
 			int playersHeard = 0;
 			for (Player player : this.getServer().getOnlinePlayers())
 			{
@@ -120,7 +179,7 @@ public class KaldenvoldPlugin extends JavaPlugin
 					{
 						playersHeard++;
 	
-						if (k_player.getRace().getType() != RaceTypes.NONE && k_player.autoTranslate == false)
+						if (k_player.getRace().getType() != RaceType.NONE && k_player.autoTranslate == false)
 						{
 							if (!sender.getRace()
 									.sharesLanguage(k_player.getRace()))
@@ -133,13 +192,13 @@ public class KaldenvoldPlugin extends JavaPlugin
 	
 					if (sender.getRace().sharesLanguage(k_player.getRace())
 							|| player == chatter
-							|| k_player.getRace().getType() == RaceTypes.NONE
+							|| k_player.getRace().getType() == RaceType.NONE
 							|| k_player.autoTranslate == true)
 					{
 						finalisedMessage = msg;
 						player.sendMessage(sender.getRace().getColor() + "["
 								+ sender.getRace().getDisplayName() + "] "
-								+ ChatColor.WHITE + chatterName + ": "
+								+ ChatColor.WHITE + icName + ": "
 								+ finalisedMessage);
 					}
 					else
@@ -190,7 +249,7 @@ public class KaldenvoldPlugin extends JavaPlugin
 						
 						player.sendMessage(sender.getRace().getColor() + "["
 								+ sender.getRace().getDisplayName() + "] "
-								+ ChatColor.WHITE + chatterName + ": "
+								+ ChatColor.WHITE + icName + ": "
 								+ finalisedMessage);
 					}
 				}
@@ -200,15 +259,47 @@ public class KaldenvoldPlugin extends JavaPlugin
 			{
 				chatter.sendMessage(ChatColor.YELLOW + "Nobody can hear you!");
 			}
+			
+			return;
 		}
-		else
+		
+		if (chatType == ChatType.LOCAL_OOC)
+		{			
+			int playersHeard = 0;
+			for (Player player : this.getServer().getOnlinePlayers())
+			{
+				if (player.getLocation().distance(chatterLocation) <= 25.0)
+				{
+					if (player != chatter)
+					{
+						playersHeard++;
+					}
+					
+					String tag = getRankTag(chatter);
+					if (tag.length() > 0)
+					{
+						tag = (tag + " ");
+					}
+					player.sendMessage(ChatColor.GRAY + "[L-OOC] " + tag + ChatColor.WHITE + oocName + ": " + msg);
+				}
+			}
+			
+			if (playersHeard == 0)
+			{
+				chatter.sendMessage(ChatColor.YELLOW + "Nobody can hear you!");
+			}
+			return;
+		}
+		
+		if (chatType == ChatType.GLOBAL_OOC)
 		{
 			String tag = getRankTag(chatter);
 			if (tag.length() > 0)
 			{
 				tag = (tag + " ");
 			}
-			getServer().broadcastMessage(ChatColor.GRAY + "[OOC] " + tag + ChatColor.WHITE + chatterName + ": " + msg);
+			getServer().broadcastMessage(ChatColor.GRAY + "[G-OOC] " + tag + ChatColor.WHITE + oocName + ": " + msg);
+			return;
 		}
 	}
 

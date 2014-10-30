@@ -3,12 +3,24 @@ main: com.jamesmonger.kaldenvold.KaldenvoldPlugin
 version: 0.9
 
 commands:
+   togglegooc:
+      description: Toggle Global OOC.
+      usage: /togglegooc
+   me:
+      description: Perform an action.
+      usage: /me [action]
    ooc:
-      description: Global OOC chat toggle.
-      usage: /<(o)oc>
+      description: Use /ch instead.
+      usage: /ooc
    o:
-      description: Global OOC chat toggle.
-      usage: /<(o)oc>
+      description: Use /ch instead.
+      usage: /o
+   channel:
+      description: Change chat channel.
+      usage: /<ch>annel [channel]
+   ch:
+      description: Change chat channel.
+      usage: /<ch>annel [channel]
    autotranslate:
       description: Super ears!
       usage: /autotranslate
