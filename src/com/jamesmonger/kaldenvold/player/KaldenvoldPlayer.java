@@ -1,23 +1,23 @@
 package com.jamesmonger.kaldenvold.player;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.entity.Player;
 
 import com.jamesmonger.kaldenvold.*;
 import com.jamesmonger.kaldenvold.race.Race;
-import com.jamesmonger.kaldenvold.race.RaceTypes;
+import com.jamesmonger.kaldenvold.race.RaceType;
 
 public class KaldenvoldPlayer
 {
-	Race race;
+	private Race race;
 	Player player;
-
-	int humanUnderstanding = 0;
-	int elfUnderstanding = 0;
-	int orcUnderstanding = 0;
-	int dwarfUnderstanding = 0;
-	int rheylinUnderstanding = 0;
 	
-	public boolean ooc = false;
+	public Map<RaceType, Integer> languageUnderstanding;
+	
+	private ChatType chatType;
+	
 	public boolean autoTranslate = false;
 
 	public String awaitingRaceClick = null;
@@ -25,22 +25,45 @@ public class KaldenvoldPlayer
 	public int raceAbility = -1;
 	
 	public boolean canUseAbility = true;
+	
+	public KaldenvoldPlayer()
+	{
+		languageUnderstanding = new HashMap<RaceType, Integer>();
+		
+		this.chatType = ChatType.LOCAL_IC;
+	}
 
 	public KaldenvoldPlayer(Player player)
 	{
+		languageUnderstanding = new HashMap<RaceType, Integer>();
+		
 		this.player = player;
+		this.chatType = ChatType.LOCAL_IC;
 	}
 
 	public KaldenvoldPlayer(Player player, String race)
 	{
+		languageUnderstanding = new HashMap<RaceType, Integer>();
+		
 		this.player = player;
-
 		this.race = KaldenvoldPlugin.raceList.get(race);
+		this.chatType = ChatType.LOCAL_IC;
+		
+		for (RaceType r : RaceType.values())
+			this.setUnderstanding(r, 0);
+		
+		this.setUnderstanding(RaceType.HUMAN, 423);
+		this.setUnderstanding(RaceType.ELF, 50);
 	}
 
 	public Player getPlayer()
 	{
 		return this.player;
+	}
+	
+	public void setPlayer(Player player)
+	{
+		this.player = player;
 	}
 
 	public Race getRace()
@@ -58,55 +81,34 @@ public class KaldenvoldPlayer
 		this.race = KaldenvoldPlugin.raceList.get(race);
 	}
 
-	public void setUnderstanding(RaceTypes type, int understanding)
+	public void setUnderstanding(RaceType type, int understanding)
 	{
-		switch (type)
-		{
-			case HUMAN:
-				humanUnderstanding = understanding;
-			break;
-			case ELF:
-				elfUnderstanding = understanding;
-			break;
-			case ORC:
-				orcUnderstanding = understanding;
-			break;
-			case DWARF:
-				dwarfUnderstanding = understanding;
-			break;
-			case RHEYLIN:
-				rheylinUnderstanding = understanding;
-			break;
-			case SENTINEL:
-				rheylinUnderstanding = understanding;
-			break;
-		}
+		if (languageUnderstanding.containsKey(type))
+			languageUnderstanding.remove(type);
+		
+		languageUnderstanding.put(type, understanding);
 	}
 
-	public int getUnderstanding(RaceTypes type)
+	public int getUnderstanding(RaceType type)
 	{
-		switch (type)
-		{
-			case NONE:
-				return -1;
-			case HUMAN:
-				return humanUnderstanding;
-			case ELF:
-				return elfUnderstanding;
-			case ORC:
-				return orcUnderstanding;
-			case DWARF:
-				return dwarfUnderstanding;
-			case RHEYLIN:
-				return rheylinUnderstanding;
-			case SENTINEL:
-				return rheylinUnderstanding;
-		}
-		return 0;
+		if (type == RaceType.NONE)
+			return -1;
+		
+		return languageUnderstanding.get(type);
 	}
 
-	public void increaseUnderstanding(RaceTypes type, int amount)
+	public void increaseUnderstanding(RaceType type, int amount)
 	{
 		this.setUnderstanding(type, (getUnderstanding(type) + 1));
+	}
+	
+	public void setChatType(ChatType type)
+	{
+		this.chatType = type;
+	}
+	
+	public ChatType getChatType()
+	{
+		return this.chatType;
 	}
 }
