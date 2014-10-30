@@ -1,18 +1,17 @@
 package com.jamesmonger.kaldenvold.player;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffectType;
 
 import ru.tehkode.permissions.PermissionUser;
 import ru.tehkode.permissions.bukkit.PermissionsEx;
 
 import com.jamesmonger.kaldenvold.KaldenvoldPlugin;
-import com.jamesmonger.kaldenvold.race.Race;
 
 public class CommandHandler
 {
@@ -44,28 +43,111 @@ public class CommandHandler
 			sender.sendMessage(ChatColor.GRAY + "You have been accepted " + ChatColor.WHITE + _target.getName() + ChatColor.GRAY + " to " + ChatColor.WHITE + "Kaldenvold" + ChatColor.GRAY + "!");
 			return true;
 		}
+		if (cmd.getName().equals("me"))
+		{
+			if (args.length == 0)
+			{
+				sender.sendMessage(ChatColor.GRAY + "Usage: " + ChatColor.WHITE + "/me [action]");
+				return true;
+			}
+			
+			String action = StringUtils.join(args, " ");
+			plugin.handleAction((Player) sender, action);
+			return true;
+		}
+		if (cmd.getName().equalsIgnoreCase("togglegooc"))
+		{
+			if (sender.hasPermission("kaldenvold.admin.globalooc") || sender.isOp())
+			{
+				if (KaldenvoldPlugin.globalOOC)
+				{
+					KaldenvoldPlugin.globalOOC = false;
+					sender.sendMessage(ChatColor.GRAY + "Global OOC disabled.");
+					
+					for (Player p : plugin.getServer().getOnlinePlayers())
+					{
+						if (p.isOp())
+							continue;
+						
+						if (p.hasPermission("kaldenvold.chat.globalooc"))
+							continue;
+						
+						KaldenvoldPlayer kp = KaldenvoldPlugin.playerList.get(p);
+						if (kp.getChatType() == ChatType.GLOBAL_OOC)
+						{
+							kp.setChatType(ChatType.LOCAL_OOC);
+							p.sendMessage(ChatColor.GRAY + "Global OOC disabled, you are now talking in the " + ChatColor.WHITE + "Local OOC" + ChatColor.GRAY + " channel");
+						}
+					}
+					return true;
+				}
+				KaldenvoldPlugin.globalOOC = true;
+				sender.sendMessage(ChatColor.GRAY + "Global OOC enabled.");
+				return true;
+			}
+			return false;
+		}
 		if (cmd.getName().equalsIgnoreCase("ooc")
 				|| cmd.getName().equalsIgnoreCase("o"))
 		{
-			KaldenvoldPlayer k_sender = KaldenvoldPlugin.playerList.get(sender);
+			sender.sendMessage(ChatColor.GRAY + "Use " + ChatColor.WHITE + "/channel" + ChatColor.GRAY + " instead");
+			return true;
+		}
+		if (cmd.getName().equalsIgnoreCase("channel")
+				|| cmd.getName().equalsIgnoreCase("ch"))
+		{
+			boolean canUseGlobal = false;
+			if (sender.hasPermission("kaldenvold.chat.globalooc") || sender.isOp())
+				canUseGlobal = true;
+			if (KaldenvoldPlugin.globalOOC)
+				canUseGlobal = true;
 			
-			if (k_sender.getRace().getName().equalsIgnoreCase("none"))
+			if(args.length != 1)
 			{
-				((Player) sender).sendMessage(ChatColor.GRAY + "You must choose a race to speak in character.");
-				k_sender.ooc = true;
+				sender.sendMessage(ChatColor.GRAY + "Usage: " + ChatColor.WHITE + " /<ch>annel [channel]");
+				if (canUseGlobal)
+					sender.sendMessage(ChatColor.GRAY + "Channels: " + ChatColor.WHITE + " 0 [Local IC], 1 [Local OOC], 2 [Global OOC]");
+				else
+					sender.sendMessage(ChatColor.GRAY + "Channels: " + ChatColor.WHITE + " 0 [Local IC], 1 [Local OOC]");
 				return true;
 			}
-			if (k_sender.ooc == true)
+			
+			int selectedChannel = -1;
+			
+			try
 			{
-				sender.sendMessage(ChatColor.GRAY + "You are now speaking in the IC channel.");
-				k_sender.ooc = false;
+				selectedChannel = Integer.parseInt(args[0]);
+			}
+			catch (Exception e)
+			{
+				sender.sendMessage(ChatColor.GRAY + "Usage: " + ChatColor.WHITE + " /<ch>annel [channel]");
+				if (canUseGlobal)
+					sender.sendMessage(ChatColor.GRAY + "Channels: " + ChatColor.WHITE + " 0 [Local IC], 1 [Local OOC], 2 [Global OOC]");
+				else
+					sender.sendMessage(ChatColor.GRAY + "Channels: " + ChatColor.WHITE + " 0 [Local IC], 1 [Local OOC]");				
+			}
+			
+			if (selectedChannel == -1)
+			{
+				if (canUseGlobal)
+					sender.sendMessage(ChatColor.GRAY + "Channels: " + ChatColor.WHITE + " 0 [Local IC], 1 [Local OOC], 2 [Global OOC]");
+				else
+					sender.sendMessage(ChatColor.GRAY + "Channels: " + ChatColor.WHITE + " 0 [Local IC], 1 [Local OOC]");
 				return true;
 			}
-			if (k_sender.ooc == false)
+			
+			if (selectedChannel == ChatType.GLOBAL_OOC.getNumericValue() && !canUseGlobal)
 			{
-				sender.sendMessage(ChatColor.GRAY + "You are now speaking in the OOC channel.");
-				k_sender.ooc = true;
-				return true;
+				sender.sendMessage(ChatColor.GRAY + "You cannot use the Global OOC channel.");
+			}
+			
+			for (ChatType type : ChatType.values())
+			{
+				if (type.getNumericValue() == selectedChannel)
+				{
+					sender.sendMessage(ChatColor.GRAY + "You are now talking in the " + type.getName() + " channel.");
+					KaldenvoldPlugin.playerList.get(sender).setChatType(type);
+				}
 			}
 			return true;
 		}
