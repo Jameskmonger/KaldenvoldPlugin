@@ -1,5 +1,6 @@
 package com.jamesmonger.kaldenvold.player;
 
+import java.io.IOException;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
@@ -24,12 +25,8 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import com.jamesmonger.kaldenvold.KaldenvoldPlugin;
 
@@ -54,26 +51,26 @@ public class Events implements Listener
 				{
 					public void run()
 					{
-						plugin.SendChatToAll(player, msg);
+						plugin.handleChat(player, msg);
 					}
 				});
 		event.setCancelled(true);
 	}
 
 	@EventHandler
-	public void playerJoin(PlayerJoinEvent event)
+	public void playerJoin(PlayerJoinEvent event) throws IOException
 	{
-		KaldenvoldPlugin.accountManager.LoadAccount(event.getPlayer());
+		KaldenvoldPlugin.accountManager.loadAccount(event.getPlayer());
 		
 		Utils.giveRaceAbility(this.plugin, event.getPlayer());
 	}
 
 	@EventHandler
-	public void playerQuit(PlayerQuitEvent event)
+	public void playerQuit(PlayerQuitEvent event) throws IOException
 	{
 		Player p = event.getPlayer();
 		
-		KaldenvoldPlugin.accountManager.SaveAccount(p);
+		KaldenvoldPlugin.accountManager.saveAccount(p);
 		
 		KaldenvoldPlayer k_player = com.jamesmonger.kaldenvold.KaldenvoldPlugin.playerList.get(p);
 		
@@ -104,11 +101,22 @@ public class Events implements Listener
 			return;
 		}
 		
-		if (!event.isBedSpawn())
+		Location essBed = plugin.essentials.getUser(p).getBedSpawnLocation();
+		if (essBed != null)
 		{
-			event.setRespawnLocation(k_player.getRace().getHome(Bukkit.getWorld("world")));
+			event.setRespawnLocation(essBed);
 			return;
 		}
+		
+		Location mcBed = p.getBedSpawnLocation();
+		if (mcBed != null)
+		{
+			event.setRespawnLocation(mcBed);
+			return;
+		}
+		
+		event.setRespawnLocation(k_player.getRace().getHome(Bukkit.getWorld("world")));
+		return;
 	}
 
 	@EventHandler
@@ -178,9 +186,9 @@ public class Events implements Listener
 		Player player = event.getPlayer();
 		Block block = event.getBlock();
 		String[] text = event.getLines();
-		int type = block.getTypeId();
 
-		if ((type == 63) || (type == 68))
+		Material type = block.getType();
+		if ((type == Material.SIGN) || (type == Material.SIGN_POST))
 		{
 			if (text[0].replaceAll("(?i)ยง[0-F]", "").toLowerCase()
 					.equals("[action]"))
@@ -343,7 +351,7 @@ public class Events implements Listener
 				
 				if (sign.getLine(0).equals("ง4[Race]"))
 				{
-					if (player.getInventory().getItemInHand().getTypeId() != 0)
+					if (player.getInventory().getItemInHand().getType() != Material.AIR)
 					{
 						player.sendMessage("Your hand must be empty to use a race sign.");
 						event.setCancelled(true);
