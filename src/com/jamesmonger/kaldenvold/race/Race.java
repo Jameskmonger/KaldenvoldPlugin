@@ -11,13 +11,12 @@ import org.bukkit.Location;
 import org.bukkit.World;
 
 import com.jamesmonger.kaldenvold.*;
-import com.jamesmonger.kaldenvold.player.KaldenvoldPlayer;
 
 public class Race
 {
 	String literalName;
 	String displayName;
-	RaceTypes type;
+	RaceType type;
 	ArrayList<String> permissions;
 	KaldenvoldPlugin plugin;
 	
@@ -26,7 +25,7 @@ public class Race
 	double homeZ;
 	float homeRot;
 
-	public Race(KaldenvoldPlugin plugin, String literalName, String displayName, RaceTypes type, double homeX, double homeY, double homeZ, float homeRot)
+	public Race(KaldenvoldPlugin plugin, String literalName, String displayName, RaceType type, double homeX, double homeY, double homeZ, float homeRot)
 	{
 		this.plugin = plugin;
 		this.literalName = literalName;
@@ -71,6 +70,8 @@ public class Race
 			{
 				permissions.add(l);
 			}
+			
+			br.close();
 		}
 		catch (Exception e) {}
 	}
@@ -80,8 +81,8 @@ public class Race
 		if (this.type == other.type)
 			return true;
 
-		if ((this.type == RaceTypes.RHEYLIN && other.type == RaceTypes.SENTINEL)
-				|| (this.type == RaceTypes.SENTINEL && other.type == RaceTypes.RHEYLIN))
+		if ((this.type == RaceType.RHEYLIN && other.type == RaceType.SENTINEL)
+				|| (this.type == RaceType.SENTINEL && other.type == RaceType.RHEYLIN))
 			return true;
 
 		return false;
@@ -107,7 +108,7 @@ public class Race
 		return this.literalName;
 	}
 
-	public RaceTypes getType()
+	public RaceType getType()
 	{
 		return this.type;
 	}
